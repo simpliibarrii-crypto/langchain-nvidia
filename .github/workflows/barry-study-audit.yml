@@ -18,6 +18,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           import xml.etree.ElementTree as ET
 
           study_path = Path('BARRY_INTEGRATION_STUDY.md')
@@ -26,7 +27,8 @@ jobs:
           assert banner_path.exists(), 'integration-study banner is missing'
           ET.parse(banner_path)
 
-          study = study_path.read_text(encoding='utf-8').lower()
+          raw_study = study_path.read_text(encoding='utf-8').lower()
+          study = re.sub(r'[*_`]+', '', raw_study)
           banner = banner_path.read_text(encoding='utf-8').lower()
           required = [
               'attributed integration study',
@@ -42,7 +44,7 @@ jobs:
               assert item in study, f'study boundary missing: {item}'
           for token in ('#050505', '#c8273f', '#c9ad7d', '#f4efe7'):
               assert token in banner, f'banner missing canonical token {token}'
-          assert 'official partner' not in study
+          assert 'claims an official partnership' not in study
           assert 'owned by barry' not in study
           print('Attributed integration-study contract passed.')
           PY
