@@ -1,0 +1,73 @@
+name: Barry Integration Study Audit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  study-layer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate study document, visual asset, and attribution boundary
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import xml.etree.ElementTree as ET
+
+          study_path = Path('BARRY_INTEGRATION_STUDY.md')
+          banner_path = Path('assets/integration-study-header.svg')
+          assert study_path.exists(), 'Barry integration study is missing'
+          assert banner_path.exists(), 'integration-study banner is missing'
+          ET.parse(banner_path)
+
+          raw_study = study_path.read_text(encoding='utf-8').lower()
+          study = re.sub(r'[*_`]+', '', raw_study)
+          banner = banner_path.read_text(encoding='utf-8').lower()
+          required = [
+              'attributed integration study',
+              'does not claim ownership',
+              'upstream langchain',
+              'nvidia',
+              'do not use raven ecosystem branding to imply an official langchain or nvidia partnership',
+              'local execution, hosted apis, and simulated browser demonstrations',
+              'https://github.com/langchain-ai/langchain-nvidia',
+              'https://simpliibarrii-crypto.github.io/',
+          ]
+          for item in required:
+              assert item in study, f'study boundary missing: {item}'
+          for token in ('#050505', '#c8273f', '#c9ad7d', '#f4efe7'):
+              assert token in banner, f'banner missing canonical token {token}'
+          assert 'claims an official partnership' not in study
+          assert 'owned by barry' not in study
+          print('Attributed integration-study contract passed.')
+          PY
+
+  public-route-demo-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify public demonstration links remain explicit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          study = Path('BARRY_INTEGRATION_STUDY.md').read_text(encoding='utf-8')
+          links = [
+              'project.html?project=langchain-nvidia',
+              'research.html',
+              'github.com/langchain-ai/langchain-nvidia',
+          ]
+          for link in links:
+              assert link in study, f'missing public or upstream link: {link}'
+          assert 'deterministic local tool' in study.lower()
+          assert 'optional nvidia service' in study.lower()
+          assert 'raven evidence and verification' in study.lower()
+          print('Public route-plan documentation passed.')
+          PY
